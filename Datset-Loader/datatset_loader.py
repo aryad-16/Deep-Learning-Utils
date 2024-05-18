@@ -1,3 +1,10 @@
+"""
+Example of how to create custom dataset in Pytorch. In this case
+we have images of cats and dogs in a separate folder and a csv
+file containing the name to the jpg file as well as the target
+label (0 for cat, 1 for dog).
+"""
+
 import os
 import pandas as pd
 import numpy as np
