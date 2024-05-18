@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F  # Parameterless functions, like (some) activation functions
 import torchvision.datasets as datasets  # Standard datasets
 import torchvision.transforms as transforms  # Transformations we can perform on our dataset for augmentation
+import torchvision
 from torch import optim  # For optimizers like SGD, Adam, etc.
 from torch import nn  # All neural network modules
 from torch.utils.data import (
@@ -47,9 +48,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Hyperparameters
 in_channels = 1
 num_classes = 10
-learning_rate = 3e-4 # karpathy's constant
-batch_size = 64
-num_epochs = 3
+# learning_rate = 3e-4 # karpathy's constant
+# batch_size = 64
+num_epochs = 1
+## Checking which combination of batch_size and learning_rate gives the best accuracy
+batch_sizes = [64]
+learning_rates = [0.0001]
 
 # Load Data
 train_dataset = datasets.MNIST(
@@ -58,41 +62,50 @@ train_dataset = datasets.MNIST(
 test_dataset = datasets.MNIST(
     root="dataset/", train=False, transform=transforms.ToTensor(), download=True
 )
-train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size=batch_sizes[0], shuffle=True)
 
-# Initialize network
-model = CNN(in_channels=in_channels, num_classes=num_classes).to(device)
 
-# Loss and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-writer  = SummaryWriter(f'Tensorboard/tensorboard_logger')
-step=0
+for batch_size in batch_sizes:
+    for learning_rate in learning_rates:
+        step=0
+        writer = SummaryWriter(f'Tensorboard/tensorboard_logger/MiniBatchSize {batch_size} LR {learning_rate}')
+        # Initialize network
+        model = CNN(in_channels=in_channels, num_classes=num_classes).to(device)
+        model.train()
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+        train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+        # Train Network
+        for epoch in range(num_epochs):
+            losses = []
+            accuracies = []
+            for batch_idx, (data, targets) in enumerate(tqdm(train_loader)):
+                # Get data to cuda if possible
+                data = data.to(device=device)
+                targets = targets.to(device=device)
 
-# Train Network
-for epoch in range(num_epochs):
-    for batch_idx, (data, targets) in enumerate(tqdm(train_loader)):
-        # Get data to cuda if possible
-        data = data.to(device=device)
-        targets = targets.to(device=device)
+                # forward
+                scores = model(data)
+                loss = criterion(scores, targets)
+                losses.append(loss.item())
 
-        # forward
-        scores = model(data)
-        loss = criterion(scores, targets)
+                # backward
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-        # backward
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+                img_grid = torchvision.utils.make_grid(data)
+                writer.add_image('mnist_images', img_grid)
+                writer.add_histogram('fc1', model.fc1.weight)
+                _,predictions = scores.max(1)
+                num_correct = (predictions == targets).sum()
+                running_train_acc = float(num_correct)/float(data.shape[0])
+                accuracies.append(running_train_acc)
 
-        _,predictions = scores.max(1)
-        num_correct = (predictions == targets).sum()
-        running_train_acc = float(num_correct)/float(data.shape[0])
-
-        writer.add_scalar('Training Loss', loss, global_step=step)
-        writer.add_scalar('Training Accuracy', running_train_acc, global_step=step)
-        step+=1
+                writer.add_scalar('Training Loss', loss, global_step=step)
+                writer.add_scalar('Training Accuracy', running_train_acc, global_step=step)
+                step+=1
+            writer.add_hparams({'batch_size': batch_size, 'learning_rate': learning_rate}, {'loss': sum(losses)/len(losses), 'accuracy': sum(accuracies)/len(accuracies)})
 
 # Check accuracy on training & test to see how good our model
 def check_accuracy(loader, model):
