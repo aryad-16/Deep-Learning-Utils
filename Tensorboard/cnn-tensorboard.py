@@ -64,7 +64,6 @@ test_dataset = datasets.MNIST(
 )
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_sizes[0], shuffle=True)
 
-
 for batch_size in batch_sizes:
     for learning_rate in learning_rates:
         step=0
