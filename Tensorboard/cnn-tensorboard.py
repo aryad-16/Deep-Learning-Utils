@@ -9,7 +9,7 @@ from torch.utils.data import (
     DataLoader,
 )  # Gives easier dataset managment by creating mini batches etc.
 from tqdm import tqdm  # For nice progress bar!
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard.writer import SummaryWriter
 
 # Simple CNN
 class CNN(nn.Module):
