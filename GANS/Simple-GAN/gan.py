@@ -87,7 +87,7 @@ for epoch in range(num_epochs):
         opt_gen.step()
 
         ##Tensorboard Logging
-        if batch_idx == 0:
+        if batch_idx % 100 == 0:
             print(
                 f"Epoch [{epoch}/{num_epochs}] Batch {batch_idx}/{len(loader)} \
                       Loss D: {lossD:.4f}, loss G: {lossG:.4f}"
