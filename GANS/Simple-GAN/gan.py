@@ -72,11 +72,11 @@ for epoch in range(num_epochs):
         fake = gen(noise)
         disc_real = disc(real).view(-1)
         lossD_real = criterion(disc_real, torch.ones_like(disc_real))
-        disc_fake = disc(fake).view(-1)
+        disc_fake = disc(fake.detach()).view(-1)
         lossD_fake = criterion(disc_fake, torch.zeros_like(disc_fake))
         lossD = (lossD_real + lossD_fake)/2
         disc.zero_grad()
-        lossD.backward(retain_graph=true)
+        lossD.backward()
         opt_disc.step()
 
         ## Generator Training
