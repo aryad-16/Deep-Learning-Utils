@@ -14,7 +14,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LEARNING_RATE = 2e-4
 NOISE_DIM = 100
 IMG_SIZE = 64
-CHANNELS_IMG = 3 
+CHANNELS_IMG = 1
 BATCH_SIZE = 128
 NUM_EPOCHS = 5
 FEATURES_DISC = 64
@@ -29,8 +29,8 @@ transforms = transforms.Compose([
     )
 ])
 
-# dataset = datasets.MNIST(root='/dataset', transform=transforms, download=true, train=true)
-dataset = datasets.ImageFolder(root="celeb_dataset", transform=transforms)
+dataset = datasets.MNIST(root='', transform=transforms, download=true, train=true)
+# dataset = datasets.ImageFolder(root="celeb_dataset", transform=transforms)
 loader = DataLoader(dataset, BATCH_SIZE, true)
 
 disc = Discriminator(CHANNELS_IMG, FEATURES_DISC).to(device)
@@ -58,11 +58,11 @@ for epoch in range(NUM_EPOCHS):
         disc_real = disc(real).reshape(-1)
         loss_disc_real = criterion(disc_real, torch.ones_like(disc_real))
         fake = gen(noise)
-        disc_fake = disc(fake).reshape(-1)
+        disc_fake = disc(fake.detach()).reshape(-1)
         loss_disc_fake = criterion(disc_fake, torch.zeros_like(disc_fake))
         loss_disc = (loss_disc_real + loss_disc_fake)/2
         disc.zero_grad()
-        loss_disc.backward(retain_graph=true)
+        loss_disc.backward()
         opt_disc.step()
 
         output = disc(fake).reshape(-1)
